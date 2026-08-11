@@ -18,7 +18,7 @@ app.post('/api/appsumo/webhook', (req, res) => {
             console.log(`Received event:`, event.action);
     }
 
-    return res.status(200).json({ received: true });
+    return res.status(200).json({ success: true });
 });
 
 // 2. OAUTH REDIRECT / CALLBACK ENDPOINT (Handles user login/signup redirect)
