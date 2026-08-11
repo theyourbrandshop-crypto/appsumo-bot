@@ -26,7 +26,7 @@ app.get('/api/appsumo/oauth/callback', (req, res) => {
     const authCode = req.query.code;
 
     if (!authCode) {
-        return res.status(400).send('No authorization code provided.');
+        return res.status(200).send('No authorization code provided.');
     }
 
     console.log(`Received OAuth code: ${authCode}`);
