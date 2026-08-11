@@ -1,0 +1,8 @@
+{
+  "name": "appsumo-bot",
+  "version": "1.0.0",
+  "main": "gemini-code-1786405884568.js",
+  "scripts": {
+    "start": "node gemini-code-1786405884568.js"
+  }
+}
