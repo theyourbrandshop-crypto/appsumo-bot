@@ -12,7 +12,6 @@ const db = new Client({
 
 db.connect().then(() => {
   console.log('Connected to Supabase database!');
-  // Automatically create table if it doesn't exist yet
   return db.query(`
     CREATE TABLE IF NOT EXISTS licenses (
       id SERIAL PRIMARY KEY,
@@ -24,35 +23,32 @@ db.connect().then(() => {
   `);
 }).catch(err => console.error('Database connection error', err));
 
-// Your existing webhook endpoint
-app.post('/webhook', async (req, res) => {
+// Updated to match AppSumo's exact endpoint structure
+app.post('/api/appsumo/webhook', async (req, res) => {
   const event = req.body;
+  console.log('Received AppSumo webhook:', event);
 
-  switch (event.type) {
-    case 'license_active':
-      console.log('License activated:', event.data);
-      
-      try {
-        // Automatically save the buyer's details to the database!
-        const email = event.data.email || 'unknown';
-        const licenseKey = event.data.license_key || 'unknown';
-        const tier = event.data.tier || 'standard';
+  try {
+    const email = event.data?.email || event.email || 'unknown';
+    const licenseKey = event.data?.license_key || event.license_key || 'unknown';
+    const tier = event.data?.tier || event.tier || 'standard';
 
-        await db.query(
-          'INSERT INTO licenses (email, license_key, tier) VALUES ($1, $2, $3)',
-          [email, licenseKey, tier]
-        );
-        console.log('Successfully saved buyer to database automatically.');
-      } catch (err) {
-        console.error('Error saving license to database:', err);
-      }
-      
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+    await db.query(
+      'INSERT INTO licenses (email, license_key, tier) VALUES ($1, $2, $3)',
+      [email, licenseKey, tier]
+    );
+    console.log('Successfully saved buyer to database!');
+  } catch (err) {
+    console.error('Error saving license to database:', err);
   }
 
-  res.status(200).send({ received: true });
+  // AppSumo explicitly requires this response to verify the webhook
+  res.status(200).send({ success: true });
+});
+
+// OAuth callback endpoint to clear that second error warning
+app.get('/api/appsumo/oauth/callback', (req, res) => {
+  res.status(200).send('OAuth callback received successfully!');
 });
 
 const PORT = process.env.PORT || 3000;
