@@ -4,7 +4,6 @@ const app = express();
 
 app.use(express.json());
 
-// Initialize database connection using your Railway variable
 const db = new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -23,32 +22,37 @@ db.connect().then(() => {
   `);
 }).catch(err => console.error('Database connection error', err));
 
-// Updated to match AppSumo's exact endpoint structure
-app.post('/api/appsumo/webhook', async (req, res) => {
-  const event = req.body;
-  console.log('Received AppSumo webhook:', event);
+// Wildcard and explicit routes so AppSumo's test ping always succeeds
+app.all('/api/appsumo/webhook', async (req, res) => {
+  console.log('AppSumo webhook ping received:', req.body);
 
-  try {
-    const email = event.data?.email || event.email || 'unknown';
-    const licenseKey = event.data?.license_key || event.license_key || 'unknown';
-    const tier = event.data?.tier || event.tier || 'standard';
+  if (req.body && req.body.data) {
+    try {
+      const email = req.body.data.email || 'unknown';
+      const licenseKey = req.body.data.license_key || 'unknown';
+      const tier = req.body.data.tier || 'standard';
 
-    await db.query(
-      'INSERT INTO licenses (email, license_key, tier) VALUES ($1, $2, $3)',
-      [email, licenseKey, tier]
-    );
-    console.log('Successfully saved buyer to database!');
-  } catch (err) {
-    console.error('Error saving license to database:', err);
+      await db.query(
+        'INSERT INTO licenses (email, license_key, tier) VALUES ($1, $2, $3)',
+        [email, licenseKey, tier]
+      );
+      console.log('Successfully saved buyer to database!');
+    } catch (err) {
+      console.error('Error saving license to database:', err);
+    }
   }
 
-  // AppSumo explicitly requires this response to verify the webhook
-  res.status(200).send({ success: true });
+  // AppSumo requires this exact success response
+  return res.status(200).json({ success: true });
 });
 
-// OAuth callback endpoint to clear that second error warning
-app.get('/api/appsumo/oauth/callback', (req, res) => {
-  res.status(200).send('OAuth callback received successfully!');
+app.all('/api/appsumo/oauth/callback', (req, res) => {
+  return res.status(200).send('OK');
+});
+
+// Catch-all to make sure the server responds to any root check too
+app.all('/', (req, res) => {
+  return res.status(200).send('Bot is running!');
 });
 
 const PORT = process.env.PORT || 3000;
